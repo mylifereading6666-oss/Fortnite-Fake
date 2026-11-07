@@ -24,10 +24,36 @@
 #toast{position:fixed;top:22%;left:50%;transform:translate(-50%,-50%);z-index:5;background:#0b142aeb;border:1px solid #42e8ff88;border-radius:12px;padding:12px 18px;opacity:0;transition:opacity .2s;pointer-events:none}
 @media(min-width:800px){#joystick{display:none}#actions{bottom:110px}#help{max-width:400px}}
 @media(max-width:600px){#help{max-width:210px;font-size:10px;padding:8px}#stats{font-size:10px}.build{height:60px;width:58px}#buildbar{bottom:10px;gap:5px}#actions{right:9px;bottom:92px}.action{min-width:68px;padding:10px 8px;font-size:12px}#joystick{left:14px;bottom:90px;width:112px;height:112px}#stick{left:30px;top:30px}}
+
+#lobby{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:linear-gradient(115deg,#07111ddd,#102d49cc),radial-gradient(circle at 70% 30%,#36d9ff55,transparent 40%);backdrop-filter:blur(5px);padding:20px}
+.lobby-card{width:min(1100px,100%);max-height:95vh;overflow:auto;border:1px solid #ffffff33;border-radius:22px;background:#081321eF;padding:clamp(18px,4vw,38px);box-shadow:0 25px 90px #0009}
+.lobby-head{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}.lobby-title{font-size:clamp(28px,5vw,58px);font-weight:1000;font-style:italic;letter-spacing:-.04em}.lobby-title span{color:#44eaff}.lobby-sub{color:#9eb4c9;font-size:13px}
+.mode-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:24px 0}
+.mode-card{min-height:145px;text-align:left;border:1px solid #ffffff2c;border-radius:15px;padding:16px;color:white;background:linear-gradient(145deg,#172d43,#0b1725);cursor:pointer;transition:.15s}
+.mode-card:hover,.mode-card.selected{border-color:#48eaff;transform:translateY(-2px);box-shadow:0 0 0 2px #48eaff25}
+.mode-card .mode-icon{font-size:28px}.mode-card strong{display:block;font-size:18px;margin:8px 0}.mode-card small{color:#b4c4d5;line-height:1.5}
+#startGame{background:linear-gradient(90deg,#00b9df,#0876e8);border:0;border-radius:12px;padding:16px 30px;color:white;font-size:18px;font-weight:900;cursor:pointer}
+#backLobby{position:fixed;z-index:4;top:78px;left:12px;pointer-events:auto;display:none}
+#placementGuide{position:fixed;z-index:3;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;color:#fff;background:#071321b9;border:1px solid #4ceaff;border-radius:8px;padding:7px 12px;font-size:12px;text-shadow:0 2px 5px #000}
+#rotateNotice{display:none;position:fixed;z-index:20;inset:0;background:#07111df5;align-items:center;justify-content:center;text-align:center;padding:30px;font-size:22px;font-weight:900}
+@media(max-width:650px){.lobby-head{align-items:flex-start}.mode-grid{grid-template-columns:1fr 1fr}.mode-card{min-height:120px;padding:12px}.mode-card strong{font-size:15px}}
 </style>
 </head>
 <body>
 <div id="game"></div>
+<div id="lobby"><div class="lobby-card">
+ <div class="lobby-head"><div><div class="lobby-title"><span>BUILD</span> ISLAND</div><div class="lobby-sub">3D BUILDING PRACTICE • COMMUNITY GAME MODES</div></div><div class="panel">シーズン 01<br><b>建築トレーニング</b></div></div>
+ <h2>ゲームモードを選択</h2><div class="lobby-sub">モードは今後のアップデートで追加予定。選択したモードでプレイを開始できます。</div>
+ <div class="mode-grid" id="modeGrid">
+ <button class="mode-card selected" data-mode="build"><span class="mode-icon">🧱</span><strong>建築練習</strong><small>自由に建築して操作を練習</small></button>
+ <button class="mode-card" data-mode="speed"><span class="mode-icon">⚡</span><strong>スピード建築</strong><small>時間を意識して素早く建築する練習</small></button>
+ <button class="mode-card" data-mode="edit"><span class="mode-icon">🎯</span><strong>編集トレーニング</strong><small>編集操作を練習するモード（準備中）</small></button>
+ <button class="mode-card" data-mode="free"><span class="mode-icon">🌍</span><strong>フリービルド</strong><small>建築エリアを自由に探索（準備中）</small></button>
+ </div><button id="startGame">プレイ開始 ▶</button><p class="lobby-sub">※非公式のファン制作練習ゲームです。Fortnite本編とは接続していません。</p>
+</div></div>
+<button class="action" id="backLobby">ロビーへ戻る</button>
+<div id="placementGuide">建築プレビューを確認して「建築する」</div>
+<div id="rotateNotice">📱 端末を横向きにしてください<br><small>横画面でプレイすると操作しやすくなります</small></div>
 <div id="top" class="hud">
  <div class="panel"><div id="brand">BUILD LAB <small>3D BUILDING PRACTICE</small></div></div>
  <div class="panel" id="stats">モード：建築練習<br>配置数：<b id="count">0</b><br>選択：<b id="selectedName">壁</b></div>
@@ -55,7 +81,10 @@ const grid=new THREE.GridHelper(100,100,0xffffff,0xffffff);grid.position.y=.01;g
 const platform=new THREE.Mesh(new THREE.BoxGeometry(24,.3,24),new THREE.MeshStandardMaterial({color:0x596b7a,roughness:.85}));platform.position.y=.12;platform.receiveShadow=true;platform.castShadow=true;scene.add(platform);
 const colors={wall:0x55c9ee,floor:0x55d9a5,ramp:0xffc65c,roof:0xc18aff};
 const labels={wall:'壁',floor:'床',ramp:'階段',roof:'屋根'};
-let selected='wall',rotation=0,placed=[],targetPos=new THREE.Vector3(0,.3,0),yaw=0,pitch=-.12,moveX=0,moveY=0,placing=false;
+let selected='wall',rotation=0,placed=[],targetPos=new THREE.Vector3(0,.3,0),yaw=0,pitch=-.12,moveX=0,moveY=0,placing=false,gameStarted=false,currentMode='build';
+const previewMat=new THREE.MeshBasicMaterial({color:colors.wall,transparent:true,opacity:.38,depthWrite:false});
+const preview=new THREE.Mesh(new THREE.BoxGeometry(2,2.4,.18),previewMat);preview.visible=false;scene.add(preview);
+function refreshPreview(){preview.visible=gameStarted;preview.material.color.setHex(colors[selected]);const p=getPlacement();preview.position.set(p.x,p.y+1.2,p.z);preview.rotation.y=rotation;}
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
 function snap(v){return Math.round(v/2)*2}
 function createPiece(type,pos,rot=0){
@@ -74,7 +103,7 @@ function getPlacement(){
  raycaster.setFromCamera(pointer,camera);const hit=new THREE.Vector3();if(raycaster.ray.intersectPlane(groundPlane,hit)){return new THREE.Vector3(snap(hit.x),0,snap(hit.z))}
  const dir=new THREE.Vector3();camera.getWorldDirection(dir);return new THREE.Vector3(snap(camera.position.x+dir.x*5),0,snap(camera.position.z+dir.z*5));
 }
-function placePiece(){const pos=getPlacement();if(Math.abs(pos.x)>22||Math.abs(pos.z)>22){showToast('練習エリアの内側に配置してください');return}const mesh=createPiece(selected,pos,rotation);placed.push(mesh);document.querySelector('#count').textContent=placed.length;showToast(labels[selected]+'を配置しました')}
+function placePiece(){if(!gameStarted)return;const pos=getPlacement();if(Math.abs(pos.x)>22||Math.abs(pos.z)>22){showToast('練習エリアの内側に配置してください');return}const mesh=createPiece(selected,pos,rotation);placed.push(mesh);document.querySelector('#count').textContent=placed.length;showToast(labels[selected]+'を配置しました')}
 document.querySelector('#place').addEventListener('click',placePiece);
 document.querySelector('#rotate').addEventListener('click',()=>{rotation+=Math.PI/2;showToast('建築パーツを回転')});
 document.querySelector('#remove').addEventListener('click',()=>{const m=placed.pop();if(m){scene.remove(m);m.geometry.dispose();m.material.dispose();document.querySelector('#count').textContent=placed.length;showToast('最後の建築を削除しました')}else showToast('削除する建築がありません')});
@@ -93,8 +122,21 @@ function joyEnd(){joyId=null;moveX=moveY=0;stick.style.transform='translate(0,0)
 const keys={};document.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key===' '){e.preventDefault();placePiece()}if(e.key.toLowerCase()==='r')rotation+=Math.PI/2});
 document.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 function animate(){requestAnimationFrame(animate);const forward=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0)-moveY;const side=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+moveX;const speed=.12;camera.position.x+=(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed;camera.position.z+=(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*speed;camera.position.x=Math.max(-23,Math.min(23,camera.position.x));camera.position.z=Math.max(-23,Math.min(23,camera.position.z));camera.position.y=3.2;
-const dir=new THREE.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch));camera.lookAt(camera.position.clone().add(dir));renderer.render(scene,camera)}
+const dir=new THREE.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch));camera.lookAt(camera.position.clone().add(dir));if(gameStarted){refreshPreview();}else{preview.visible=false;}renderer.render(scene,camera)}
 animate();
+document.querySelectorAll('.mode-card').forEach(card=>card.addEventListener('click',()=>{document.querySelectorAll('.mode-card').forEach(x=>x.classList.remove('selected'));card.classList.add('selected');currentMode=card.dataset.mode;}));
+document.querySelector('#startGame').addEventListener('click',()=>{
+ gameStarted=true;document.querySelector('#lobby').style.display='none';document.querySelector('#backLobby').style.display='block';
+ document.querySelector('#stats').innerHTML='モード：'+({build:'建築練習',speed:'スピード建築',edit:'編集トレーニング（準備中）',free:'フリービルド（準備中）'}[currentMode])+'<br>配置数：<b id="count">0</b><br>選択：<b id="selectedName">壁</b>';
+ showToast('練習を開始しました');refreshPreview();
+ if(currentMode==='speed'){showToast('スピード建築：自由練習モードで準備中です');}
+});
+document.querySelector('#backLobby').addEventListener('click',()=>{gameStarted=false;document.querySelector('#lobby').style.display='flex';document.querySelector('#backLobby').style.display='none';preview.visible=false;});
+const orient=()=>{const portrait=innerHeight>innerWidth;document.querySelector('#rotateNotice').style.display=(portrait&&innerWidth<900)?'flex':'none';};
+orient();addEventListener('resize',orient);
+document.querySelectorAll('.build').forEach(b=>b.addEventListener('click',()=>setTimeout(refreshPreview,0)));
+document.querySelector('#rotate').addEventListener('click',()=>setTimeout(refreshPreview,0));
+
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 </script>
 </body>
