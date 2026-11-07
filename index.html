@@ -37,10 +37,16 @@
 #placementGuide{position:fixed;z-index:3;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;color:#fff;background:#071321b9;border:1px solid #4ceaff;border-radius:8px;padding:7px 12px;font-size:12px;text-shadow:0 2px 5px #000}
 #rotateNotice{display:none;position:fixed;z-index:20;inset:0;background:#07111df5;align-items:center;justify-content:center;text-align:center;padding:30px;font-size:22px;font-weight:900}
 @media(max-width:650px){.lobby-head{align-items:flex-start}.mode-grid{grid-template-columns:1fr 1fr}.mode-card{min-height:120px;padding:12px}.mode-card strong{font-size:15px}}
+
+#crosshair{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:22px;height:22px;z-index:4;pointer-events:none;display:none;filter:drop-shadow(0 1px 2px #000)}
+#crosshair:before,#crosshair:after{content:"";position:absolute;left:50%;top:50%;background:#fff;border:1px solid #17202a;transform:translate(-50%,-50%);border-radius:1px}
+#crosshair:before{width:2px;height:19px}#crosshair:after{width:19px;height:2px}
+#crosshair .dot{position:absolute;left:50%;top:50%;width:3px;height:3px;background:#fff;border:1px solid #17202a;transform:translate(-50%,-50%);border-radius:50%}
+#aimNote{position:fixed;left:50%;top:calc(50% + 22px);transform:translateX(-50%);font-size:10px;color:#fff;text-shadow:0 1px 3px #000;z-index:4;pointer-events:none;display:none;white-space:nowrap}
 </style>
 </head>
 <body>
-<div id="game"></div>
+<div id="game"></div><div id="crosshair"><span class="dot"></span></div><div id="aimNote">照準の位置に建築プレビュー</div>
 <div id="lobby"><div class="lobby-card">
  <div class="lobby-head"><div><div class="lobby-title"><span>BUILD</span> ISLAND</div><div class="lobby-sub">3D BUILDING PRACTICE • COMMUNITY GAME MODES</div></div><div class="panel">シーズン 01<br><b>建築トレーニング</b></div></div>
  <h2>ゲームモードを選択</h2><div class="lobby-sub">モードは今後のアップデートで追加予定。選択したモードでプレイを開始できます。</div>
@@ -58,7 +64,7 @@
  <div class="panel"><div id="brand">BUILD LAB <small>3D BUILDING PRACTICE</small></div></div>
  <div class="panel" id="stats">モード：建築練習<br>配置数：<b id="count">0</b><br>選択：<b id="selectedName">壁</b></div>
 </div>
-<div id="help" class="hud panel"><b>操作</b><br>PC：WASD移動 / マウスで視点 / 左クリックで配置 / 右クリックで視点固定<br>スマホ：左スティック移動 / 画面ドラッグで視点 / 建築ボタンで配置<br>「削除」で選択中の建築を消去。「リセット」で全消去。</div>
+<div id="help" class="hud panel"><b>操作</b><br>PC：WASD移動 / マウス視点（右クリックで視点固定）/ 中央照準に合わせて左クリックで配置<br>スマホ：左スティック移動 / 画面右側をスワイプして視点 / 中央照準に合わせて建築ボタンで配置<br>「削除」で選択中の建築を消去。「リセット」で全消去。</div>
 <div id="buildbar">
  <button class="build active" data-piece="wall"><span class="emoji">▤</span><span>壁</span></button>
  <button class="build" data-piece="floor"><span class="emoji">▦</span><span>床</span></button>
@@ -100,8 +106,11 @@ function setSelected(type){selected=type;document.querySelectorAll('.build').for
 document.querySelectorAll('.build').forEach(b=>b.addEventListener('click',()=>setSelected(b.dataset.piece)));
 function showToast(t){const el=document.querySelector('#toast');el.textContent=t;el.style.opacity=1;clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>el.style.opacity=0,1400)}
 function getPlacement(){
- raycaster.setFromCamera(pointer,camera);const hit=new THREE.Vector3();if(raycaster.ray.intersectPlane(groundPlane,hit)){return new THREE.Vector3(snap(hit.x),0,snap(hit.z))}
- const dir=new THREE.Vector3();camera.getWorldDirection(dir);return new THREE.Vector3(snap(camera.position.x+dir.x*5),0,snap(camera.position.z+dir.z*5));
+ const aim=new THREE.Vector2(0,0);raycaster.setFromCamera(aim,camera);
+ const hit=new THREE.Vector3();
+ if(raycaster.ray.intersectPlane(groundPlane,hit))return new THREE.Vector3(snap(hit.x),0,snap(hit.z));
+ const dir=new THREE.Vector3();camera.getWorldDirection(dir);
+ return new THREE.Vector3(snap(camera.position.x+dir.x*6),0,snap(camera.position.z+dir.z*6));
 }
 function placePiece(){if(!gameStarted)return;const pos=getPlacement();if(Math.abs(pos.x)>22||Math.abs(pos.z)>22){showToast('練習エリアの内側に配置してください');return}const mesh=createPiece(selected,pos,rotation);placed.push(mesh);document.querySelector('#count').textContent=placed.length;showToast(labels[selected]+'を配置しました')}
 document.querySelector('#place').addEventListener('click',placePiece);
@@ -109,11 +118,20 @@ document.querySelector('#rotate').addEventListener('click',()=>{rotation+=Math.P
 document.querySelector('#remove').addEventListener('click',()=>{const m=placed.pop();if(m){scene.remove(m);m.geometry.dispose();m.material.dispose();document.querySelector('#count').textContent=placed.length;showToast('最後の建築を削除しました')}else showToast('削除する建築がありません')});
 document.querySelector('#reset').addEventListener('click',()=>{placed.forEach(m=>{scene.remove(m);m.geometry.dispose();m.material.dispose()});placed=[];document.querySelector('#count').textContent='0';showToast('建築をすべてリセットしました')});
 function updatePointer(e){const r=renderer.domElement.getBoundingClientRect();pointer.x=(e.clientX-r.left)/r.width*2-1;pointer.y=-((e.clientY-r.top)/r.height*2-1)}
-let dragging=false,lastX=0,lastY=0,mouseLook=false;
+let dragging=false,lastX=0,lastY=0,mouseLook=false,touchLookId=null;
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
-renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===2){mouseLook=true;lastX=e.clientX;lastY=e.clientY;renderer.domElement.requestPointerLock?.();return}if(e.pointerType!=='mouse'){dragging=true;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)}else if(e.button===0){updatePointer(e);placePiece()}});
-document.addEventListener('pointermove',e=>{if(document.pointerLockElement===renderer.domElement){yaw-=e.movementX*.0025;pitch-=e.movementY*.0025;pitch=Math.max(-1.1,Math.min(.65,pitch));return}if(dragging){yaw-=(e.clientX-lastX)*.006;pitch-=(e.clientY-lastY)*.006;pitch=Math.max(-1.1,Math.min(.65,pitch));lastX=e.clientX;lastY=e.clientY}else if(e.pointerType==='mouse')updatePointer(e)});
-document.addEventListener('pointerup',()=>{dragging=false;mouseLook=false});document.addEventListener('pointerlockchange',()=>{});
+renderer.domElement.addEventListener('pointerdown',e=>{
+ if(!gameStarted)return;
+ if(e.pointerType==='mouse'&&e.button===2){mouseLook=true;lastX=e.clientX;lastY=e.clientY;renderer.domElement.requestPointerLock?.();return}
+ if(e.pointerType!=='mouse'&&e.clientX>innerWidth*.38){touchLookId=e.pointerId;dragging=true;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)}
+ else if(e.pointerType==='mouse'&&e.button===0){updatePointer(e);placePiece()}
+});
+document.addEventListener('pointermove',e=>{
+ if(document.pointerLockElement===renderer.domElement){yaw-=e.movementX*.0022;pitch-=e.movementY*.0022;pitch=Math.max(-1.25,Math.min(.75,pitch));return}
+ if(dragging&&e.pointerId===touchLookId){yaw-=(e.clientX-lastX)*.0045;pitch-=(e.clientY-lastY)*.0045;pitch=Math.max(-1.25,Math.min(.75,pitch));lastX=e.clientX;lastY=e.clientY}
+ else if(e.pointerType==='mouse'&&gameStarted&&e.buttons===0)updatePointer(e)
+});
+document.addEventListener('pointerup',e=>{if(e.pointerId===touchLookId){dragging=false;touchLookId=null}mouseLook=false});document.addEventListener('pointercancel',e=>{if(e.pointerId===touchLookId){dragging=false;touchLookId=null}});document.addEventListener('pointerlockchange',()=>{});
 const joy=document.querySelector('#joystick'),stick=document.querySelector('#stick');let joyId=null;
 joy.addEventListener('pointerdown',e=>{joyId=e.pointerId;joy.setPointerCapture(e.pointerId);joyMove(e)});
 joy.addEventListener('pointermove',e=>{if(e.pointerId===joyId)joyMove(e)});
@@ -122,7 +140,7 @@ function joyEnd(){joyId=null;moveX=moveY=0;stick.style.transform='translate(0,0)
 const keys={};document.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key===' '){e.preventDefault();placePiece()}if(e.key.toLowerCase()==='r')rotation+=Math.PI/2});
 document.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 function animate(){requestAnimationFrame(animate);const forward=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0)-moveY;const side=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+moveX;const speed=.12;camera.position.x+=(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed;camera.position.z+=(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*speed;camera.position.x=Math.max(-23,Math.min(23,camera.position.x));camera.position.z=Math.max(-23,Math.min(23,camera.position.z));camera.position.y=3.2;
-const dir=new THREE.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch));camera.lookAt(camera.position.clone().add(dir));if(gameStarted){refreshPreview();}else{preview.visible=false;}renderer.render(scene,camera)}
+const dir=new THREE.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch));camera.lookAt(camera.position.clone().add(dir));if(gameStarted){refreshPreview();document.querySelector('#crosshair').style.display='block';document.querySelector('#aimNote').style.display='block';}else{preview.visible=false;document.querySelector('#crosshair').style.display='none';document.querySelector('#aimNote').style.display='none';}renderer.render(scene,camera)}
 animate();
 document.querySelectorAll('.mode-card').forEach(card=>card.addEventListener('click',()=>{document.querySelectorAll('.mode-card').forEach(x=>x.classList.remove('selected'));card.classList.add('selected');currentMode=card.dataset.mode;}));
 document.querySelector('#startGame').addEventListener('click',()=>{
