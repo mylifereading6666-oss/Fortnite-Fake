@@ -157,5 +157,31 @@ document.querySelector('#rotate').addEventListener('click',()=>setTimeout(refres
 
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 </script>
+
+<!-- ロビー操作はThree.jsの読み込みに依存させず、モジュール読み込み失敗時も反応するようにする -->
+<script>
+(function(){
+ const lobby=document.getElementById('lobby');
+ const start=document.getElementById('startGame');
+ const back=document.getElementById('backLobby');
+ let mode='build';
+ document.querySelectorAll('.mode-card').forEach(card=>{
+   card.addEventListener('click',()=>{
+     mode=card.dataset.mode||'build';
+     document.querySelectorAll('.mode-card').forEach(x=>x.classList.toggle('selected',x===card));
+   });
+ });
+ if(start) start.addEventListener('click',()=>{
+   if(lobby) lobby.style.display='none';
+   if(back) back.style.display='block';
+   const stats=document.getElementById('stats');
+   if(stats) stats.innerHTML='モード：'+({build:'建築練習',speed:'スピード建築',edit:'編集トレーニング（準備中）',free:'フリービルド（準備中）'}[mode]||'建築練習')+'<br>配置数：<b id="count">0</b><br>選択：<b id="selectedName">壁</b>';
+ });
+ if(back) back.addEventListener('click',()=>{
+   if(lobby) lobby.style.display='flex';
+   back.style.display='none';
+ });
+})();
+</script>
 </body>
 </html>
