@@ -130,7 +130,7 @@ function getPlacement(){
  const dir=new THREE.Vector3();camera.getWorldDirection(dir);
  return new THREE.Vector3(snap(camera.position.x+dir.x*6),0,snap(camera.position.z+dir.z*6));
 }
-function placePiece(){if(!gameStarted)return;const pos=getPlacement();if(Math.abs(pos.x)>22||Math.abs(pos.z)>22){showToast('練習エリアの内側に配置してください');return}const mesh=createPiece(selected,pos,rotation);placed.push(mesh);document.querySelector('#count').textContent=placed.length;showToast(labels[selected]+'を配置しました')}
+function placePiece(){if(!gameStarted)return;const pos=getPlacement();if(Math.abs(pos.x)>22||Math.abs(pos.z)>22){showToast('練習エリアの内側に配置してください');return}const occupied=placed.some(m=>Math.abs(m.position.x-pos.x)<0.01&&Math.abs(m.position.z-pos.z)<0.01);if(occupied){showToast('この位置には既に建築があります。別の場所を選んでください');return}const mesh=createPiece(selected,pos,rotation);placed.push(mesh);document.querySelector('#count').textContent=placed.length;showToast(labels[selected]+'を配置しました')}
 document.querySelector('#place').addEventListener('click',placePiece);
 document.querySelector('#rotate').addEventListener('click',()=>{rotation+=Math.PI/2;showToast('建築パーツを回転')});
 document.querySelector('#remove').addEventListener('click',()=>{const m=placed.pop();if(m){scene.remove(m);m.geometry.dispose();m.material.dispose();document.querySelector('#count').textContent=placed.length;showToast('最後の建築を削除しました')}else showToast('削除する建築がありません')});
