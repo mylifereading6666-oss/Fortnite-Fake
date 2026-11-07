@@ -55,7 +55,14 @@
  <button class="mode-card" data-mode="speed"><span class="mode-icon">⚡</span><strong>スピード建築</strong><small>時間を意識して素早く建築する練習</small></button>
  <button class="mode-card" data-mode="edit"><span class="mode-icon">🎯</span><strong>編集トレーニング</strong><small>編集操作を練習するモード（準備中）</small></button>
  <button class="mode-card" data-mode="free"><span class="mode-icon">🌍</span><strong>フリービルド</strong><small>建築エリアを自由に探索（準備中）</small></button>
- </div><button id="startGame">プレイ開始 ▶</button><p class="lobby-sub">※非公式のファン制作練習ゲームです。Fortnite本編とは接続していません。</p>
+ </div><section id="officialPractice" style="margin:18px 0;padding:16px;border:1px solid #ffffff2b;border-radius:16px;background:linear-gradient(135deg,#12263a,#0b1725)">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2 style="margin:0 0 5px">公式Fortnite練習マップ</h2><div class="lobby-sub">実際のFortniteでプレイする練習島。ここからゲーム本編へ移動します。</div></div><a href="https://www.fortnite.com/" target="_blank" rel="noopener noreferrer" style="color:#55eaff;font-weight:800">Fortnite公式サイト ↗</a></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:14px">
+<article style="padding:13px;border-radius:12px;background:#ffffff0b;border:1px solid #ffffff20"><b>JAPO 2.0 FREEBUILD EDIT TRAINING</b><p style="font-size:12px;color:#bdccda">フリービルド・建築・編集練習</p><div style="font-weight:900;color:#ffd84a">4729-8100-7282</div><a href="https://www.fortnite.com/@japo/4729-8100-7282?lang=ja" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:8px;color:#55eaff">公式島ページ ↗</a><button class="action copyIsland" data-code="4729-8100-7282" style="margin-top:8px">島コードをコピー</button></article>
+<article style="padding:13px;border-radius:12px;background:#ffffff0b;border:1px solid #ffffff20"><b>ぶゅりる 神練習マップ</b><p style="font-size:12px;color:#bdccda">建築・編集・エイムなどの総合練習</p><div style="font-weight:900;color:#ffd84a">3082-5357-4763</div><button class="action copyIsland" data-code="3082-5357-4763" style="margin-top:8px">島コードをコピー</button></article>
+<article style="padding:13px;border-radius:12px;background:#ffffff0b;border:1px solid #ffffff20"><b>Mechanics Training V5</b><p style="font-size:12px;color:#bdccda">建築・編集・ピースコントロール等の練習</p><div style="font-weight:900;color:#ffd84a">2424-4344-7824</div><button class="action copyIsland" data-code="2424-4344-7824" style="margin-top:8px">島コードをコピー</button></article>
+<article style="padding:13px;border-radius:12px;background:#ffffff0b;border:1px solid #ffffff20"><b>FREEBUILD MAP EDIT TRAINING</b><p style="font-size:12px;color:#bdccda">フリービルド・建築・編集練習</p><div style="font-weight:900;color:#ffd84a">1228-4163-2585</div><button class="action copyIsland" data-code="1228-4163-2585" style="margin-top:8px">島コードをコピー</button></article>
+</div><p style="font-size:11px;color:#9eb4c9;margin-bottom:0">※島コードはFortniteの「ディスカバリー／検索」で入力してください。島の公開状況やコードは変更される場合があります。Fortnite本編はこのサイト内では動作しません。</p></section><button id="startGame">プレイ開始 ▶</button><p class="lobby-sub">※非公式のファン制作練習ゲームです。Fortnite本編とは接続していません。</p>
 </div></div>
 <button class="action" id="backLobby">ロビーへ戻る</button>
 <div id="placementGuide">建築プレビューを確認して「建築する」</div>
@@ -194,5 +201,5 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
  });
 })();
 </script>
-<script>(()=>{const b=document.getElementById('helpToggle'),p=document.getElementById('help');if(!b||!p)return;b.addEventListener('click',()=>{const hidden=p.classList.toggle('hidden');b.textContent=hidden?'操作方法を表示':'操作方法を非表示';b.setAttribute('aria-expanded',String(!hidden));});})();</script></body>
+<script>(()=>{const b=document.getElementById('helpToggle'),p=document.getElementById('help');if(!b||!p)return;b.addEventListener('click',()=>{const hidden=p.classList.toggle('hidden');b.textContent=hidden?'操作方法を表示':'操作方法を非表示';b.setAttribute('aria-expanded',String(!hidden));});})();</script><script>document.querySelectorAll('.copyIsland').forEach(button=>button.addEventListener('click',async()=>{const code=button.dataset.code;try{await navigator.clipboard.writeText(code);button.textContent='コピーしました ✓';}catch(e){const area=document.createElement('textarea');area.value=code;document.body.appendChild(area);area.select();try{document.execCommand('copy');button.textContent='コピーしました ✓';}catch(_){button.textContent='コード：'+code;}area.remove();}setTimeout(()=>button.textContent='島コードをコピー',1800)}));</script></body>
 </html>
