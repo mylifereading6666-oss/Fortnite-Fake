@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#101827">
+<title>Fortnite Fake | 建築練習</title>
+<style>
+:root{--cyan:#42e8ff;--yellow:#ffd84a;--panel:rgba(13,20,32,.86);--line:rgba(255,255,255,.2)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101827;color:white;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none}#game{position:fixed;inset:0}canvas{display:block}
+.hud{position:fixed;z-index:2;pointer-events:none}.panel{background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(8px);border-radius:12px;padding:10px 13px;box-shadow:0 6px 24px #0005}
+#top{top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}#brand{font-weight:900;letter-spacing:.04em;font-size:clamp(13px,2.5vw,20px)}#brand small{display:block;font-size:10px;color:#aab8c9;font-weight:500;letter-spacing:.12em}
+#stats{font-size:12px;text-align:right;line-height:1.6}
+#help{left:12px;bottom:12px;max-width:310px;font-size:12px;color:#d5e0ed;line-height:1.5}
+#buildbar{position:fixed;z-index:3;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:7px;pointer-events:auto}
+.build{width:clamp(54px,9vw,76px);height:68px;border:2px solid #ffffff45;border-radius:10px;background:#172437e8;color:#fff;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;touch-action:manipulation}
+.build .emoji{font-size:24px}.build span:last-child{font-size:11px}.build.active{border-color:var(--yellow);box-shadow:0 0 0 2px #ffd84a33;background:#3b3420}
+#actions{position:fixed;right:14px;bottom:100px;z-index:3;display:flex;flex-direction:column;gap:9px;pointer-events:auto}
+.action{border:1px solid #ffffff55;background:#132236e8;color:white;border-radius:12px;padding:12px 15px;font-weight:800;min-width:82px;touch-action:manipulation}
+.action.primary{background:#087f9c;border-color:#57eaff}
+#joystick{position:fixed;left:24px;bottom:100px;width:128px;height:128px;border:2px solid #ffffff44;border-radius:50%;background:#0b142a88;z-index:3;touch-action:none;pointer-events:auto}
+#stick{position:absolute;width:52px;height:52px;left:36px;top:36px;border-radius:50%;background:#c7f5ffbb;border:2px solid white;box-shadow:0 2px 12px #0008}
+#lookhint{position:fixed;right:14px;top:50%;font-size:10px;color:#ffffff8a;z-index:2;writing-mode:vertical-rl;pointer-events:none}
+#toast{position:fixed;top:22%;left:50%;transform:translate(-50%,-50%);z-index:5;background:#0b142aeb;border:1px solid #42e8ff88;border-radius:12px;padding:12px 18px;opacity:0;transition:opacity .2s;pointer-events:none}
+@media(min-width:800px){#joystick{display:none}#actions{bottom:110px}#help{max-width:400px}}
+@media(max-width:600px){#help{max-width:210px;font-size:10px;padding:8px}#stats{font-size:10px}.build{height:60px;width:58px}#buildbar{bottom:10px;gap:5px}#actions{right:9px;bottom:92px}.action{min-width:68px;padding:10px 8px;font-size:12px}#joystick{left:14px;bottom:90px;width:112px;height:112px}#stick{left:30px;top:30px}}
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="top" class="hud">
+ <div class="panel"><div id="brand">BUILD LAB <small>3D BUILDING PRACTICE</small></div></div>
+ <div class="panel" id="stats">モード：建築練習<br>配置数：<b id="count">0</b><br>選択：<b id="selectedName">壁</b></div>
+</div>
+<div id="help" class="hud panel"><b>操作</b><br>PC：WASD移動 / マウスで視点 / 左クリックで配置 / 右クリックで視点固定<br>スマホ：左スティック移動 / 画面ドラッグで視点 / 建築ボタンで配置<br>「削除」で選択中の建築を消去。「リセット」で全消去。</div>
+<div id="buildbar">
+ <button class="build active" data-piece="wall"><span class="emoji">▤</span><span>壁</span></button>
+ <button class="build" data-piece="floor"><span class="emoji">▦</span><span>床</span></button>
+ <button class="build" data-piece="ramp"><span class="emoji">◩</span><span>階段</span></button>
+ <button class="build" data-piece="roof"><span class="emoji">⌃</span><span>屋根</span></button>
+</div>
+<div id="actions"><button class="action primary" id="place">建築する</button><button class="action" id="rotate">回転 ↻</button><button class="action" id="remove">削除</button><button class="action" id="reset">リセット</button></div>
+<div id="joystick"><div id="stick"></div></div><div id="lookhint">画面をドラッグして視点変更</div><div id="toast"></div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+const root=document.querySelector('#game');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x91c9e8);scene.fog=new THREE.Fog(0x91c9e8,35,100);
+const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.1,300);camera.position.set(0,3.2,8);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;root.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xdff4ff,0x4d5b69,2));
+const sun=new THREE.DirectionalLight(0xffffff,2.4);sun.position.set(-8,18,10);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(180,180),new THREE.MeshStandardMaterial({color:0x648b55,roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.04;ground.receiveShadow=true;scene.add(ground);
+const grid=new THREE.GridHelper(100,100,0xffffff,0xffffff);grid.position.y=.01;grid.material.opacity=.18;grid.material.transparent=true;scene.add(grid);
+// A small practice arena with original, non-game-specific geometry.
+const platform=new THREE.Mesh(new THREE.BoxGeometry(24,.3,24),new THREE.MeshStandardMaterial({color:0x596b7a,roughness:.85}));platform.position.y=.12;platform.receiveShadow=true;platform.castShadow=true;scene.add(platform);
+const colors={wall:0x55c9ee,floor:0x55d9a5,ramp:0xffc65c,roof:0xc18aff};
+const labels={wall:'壁',floor:'床',ramp:'階段',roof:'屋根'};
+let selected='wall',rotation=0,placed=[],targetPos=new THREE.Vector3(0,.3,0),yaw=0,pitch=-.12,moveX=0,moveY=0,placing=false;
+const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+function snap(v){return Math.round(v/2)*2}
+function createPiece(type,pos,rot=0){
+ const mat=new THREE.MeshStandardMaterial({color:colors[type],roughness:.6,metalness:.05});
+ let mesh;
+ if(type==='wall'){mesh=new THREE.Mesh(new THREE.BoxGeometry(2,.0+2.4,.18),mat);mesh.position.copy(pos);mesh.position.y+=1.2;}
+ if(type==='floor'){mesh=new THREE.Mesh(new THREE.BoxGeometry(2,.16,2),mat);mesh.position.copy(pos);mesh.position.y+=.1;}
+ if(type==='ramp'){const g=new THREE.BufferGeometry();const vertices=new Float32Array([-1,0,1, 1,0,1, -1,1.6,-1, 1,1.6,-1, -1,0,1, -1,1.6,-1, 1,0,1, 1,1.6,-1]);g.setAttribute('position',new THREE.BufferAttribute(vertices,3));g.setIndex([0,1,2,2,1,3,4,5,6,6,5,7]);g.computeVertexNormals();mesh=new THREE.Mesh(g,mat);mesh.position.copy(pos);mesh.position.y+=.2;mesh.rotation.y=rot;}
+ if(type==='roof'){mesh=new THREE.Mesh(new THREE.ConeGeometry(1.5,.9,4),mat);mesh.position.copy(pos);mesh.position.y+=.5;mesh.rotation.y=Math.PI/4+rot;}
+ mesh.castShadow=true;mesh.receiveShadow=true;mesh.userData={type};scene.add(mesh);return mesh;
+}
+function setSelected(type){selected=type;document.querySelectorAll('.build').forEach(b=>b.classList.toggle('active',b.dataset.piece===type));document.querySelector('#selectedName').textContent=labels[type];}
+document.querySelectorAll('.build').forEach(b=>b.addEventListener('click',()=>setSelected(b.dataset.piece)));
+function showToast(t){const el=document.querySelector('#toast');el.textContent=t;el.style.opacity=1;clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>el.style.opacity=0,1400)}
+function getPlacement(){
+ raycaster.setFromCamera(pointer,camera);const hit=new THREE.Vector3();if(raycaster.ray.intersectPlane(groundPlane,hit)){return new THREE.Vector3(snap(hit.x),0,snap(hit.z))}
+ const dir=new THREE.Vector3();camera.getWorldDirection(dir);return new THREE.Vector3(snap(camera.position.x+dir.x*5),0,snap(camera.position.z+dir.z*5));
+}
+function placePiece(){const pos=getPlacement();if(Math.abs(pos.x)>22||Math.abs(pos.z)>22){showToast('練習エリアの内側に配置してください');return}const mesh=createPiece(selected,pos,rotation);placed.push(mesh);document.querySelector('#count').textContent=placed.length;showToast(labels[selected]+'を配置しました')}
+document.querySelector('#place').addEventListener('click',placePiece);
+document.querySelector('#rotate').addEventListener('click',()=>{rotation+=Math.PI/2;showToast('建築パーツを回転')});
+document.querySelector('#remove').addEventListener('click',()=>{const m=placed.pop();if(m){scene.remove(m);m.geometry.dispose();m.material.dispose();document.querySelector('#count').textContent=placed.length;showToast('最後の建築を削除しました')}else showToast('削除する建築がありません')});
+document.querySelector('#reset').addEventListener('click',()=>{placed.forEach(m=>{scene.remove(m);m.geometry.dispose();m.material.dispose()});placed=[];document.querySelector('#count').textContent='0';showToast('建築をすべてリセットしました')});
+function updatePointer(e){const r=renderer.domElement.getBoundingClientRect();pointer.x=(e.clientX-r.left)/r.width*2-1;pointer.y=-((e.clientY-r.top)/r.height*2-1)}
+let dragging=false,lastX=0,lastY=0,mouseLook=false;
+renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
+renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===2){mouseLook=true;lastX=e.clientX;lastY=e.clientY;renderer.domElement.requestPointerLock?.();return}if(e.pointerType!=='mouse'){dragging=true;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)}else if(e.button===0){updatePointer(e);placePiece()}});
+document.addEventListener('pointermove',e=>{if(document.pointerLockElement===renderer.domElement){yaw-=e.movementX*.0025;pitch-=e.movementY*.0025;pitch=Math.max(-1.1,Math.min(.65,pitch));return}if(dragging){yaw-=(e.clientX-lastX)*.006;pitch-=(e.clientY-lastY)*.006;pitch=Math.max(-1.1,Math.min(.65,pitch));lastX=e.clientX;lastY=e.clientY}else if(e.pointerType==='mouse')updatePointer(e)});
+document.addEventListener('pointerup',()=>{dragging=false;mouseLook=false});document.addEventListener('pointerlockchange',()=>{});
+const joy=document.querySelector('#joystick'),stick=document.querySelector('#stick');let joyId=null;
+joy.addEventListener('pointerdown',e=>{joyId=e.pointerId;joy.setPointerCapture(e.pointerId);joyMove(e)});
+joy.addEventListener('pointermove',e=>{if(e.pointerId===joyId)joyMove(e)});
+function joyMove(e){const r=joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy;const max=35,l=Math.hypot(dx,dy);if(l>max){dx=dx/l*max;dy=dy/l*max}stick.style.transform='translate('+dx+'px,'+dy+'px)';moveX=dx/max;moveY=dy/max}
+function joyEnd(){joyId=null;moveX=moveY=0;stick.style.transform='translate(0,0)'}joy.addEventListener('pointerup',joyEnd);joy.addEventListener('pointercancel',joyEnd);
+const keys={};document.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key===' '){e.preventDefault();placePiece()}if(e.key.toLowerCase()==='r')rotation+=Math.PI/2});
+document.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+function animate(){requestAnimationFrame(animate);const forward=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0)-moveY;const side=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+moveX;const speed=.12;camera.position.x+=(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed;camera.position.z+=(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*speed;camera.position.x=Math.max(-23,Math.min(23,camera.position.x));camera.position.z=Math.max(-23,Math.min(23,camera.position.z));camera.position.y=3.2;
+const dir=new THREE.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch));camera.lookAt(camera.position.clone().add(dir));renderer.render(scene,camera)}
+animate();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>
