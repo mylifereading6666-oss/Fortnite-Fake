@@ -11,7 +11,7 @@
 .hud{position:fixed;z-index:2;pointer-events:none}.panel{background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(8px);border-radius:12px;padding:10px 13px;box-shadow:0 6px 24px #0005}
 #top{top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}#brand{font-weight:900;letter-spacing:.04em;font-size:clamp(13px,2.5vw,20px)}#brand small{display:block;font-size:10px;color:#aab8c9;font-weight:500;letter-spacing:.12em}
 #stats{font-size:12px;text-align:right;line-height:1.6}
-#help{left:12px;bottom:12px;max-width:310px;font-size:12px;color:#d5e0ed;line-height:1.5}
+#help{left:12px;bottom:12px;max-width:310px;font-size:12px;color:#d5e0ed;line-height:1.5}#help.hidden{display:none}#helpToggle{position:fixed;z-index:6;top:126px;left:12px;pointer-events:auto;background:rgba(12,24,39,.42);color:#fff;border:1px solid #ffffff55;border-radius:10px;padding:9px 12px;font-weight:800;backdrop-filter:blur(5px);touch-action:manipulation}
 #buildbar{position:fixed;z-index:3;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:7px;pointer-events:auto}
 .build{width:clamp(54px,9vw,76px);height:68px;border:2px solid #ffffff45;border-radius:10px;background:#172437e8;color:#fff;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;touch-action:manipulation}
 .build .emoji{font-size:24px}.build span:last-child{font-size:11px}.build.active{border-color:var(--yellow);box-shadow:0 0 0 2px #ffd84a33;background:#3b3420}
@@ -64,7 +64,7 @@
  <div class="panel"><div id="brand">BUILD LAB <small>3D BUILDING PRACTICE</small></div></div>
  <div class="panel" id="stats">モード：建築練習<br>配置数：<b id="count">0</b><br>選択：<b id="selectedName">壁</b></div>
 </div>
-<div id="help" class="hud panel"><b>操作</b><br>PC：WASD移動 / マウス視点（右クリックで視点固定）/ 中央照準に合わせて左クリックで配置<br>スマホ：左スティック移動 / 画面右側をスワイプして視点 / 中央照準に合わせて建築ボタンで配置<br>「削除」で選択中の建築を消去。「リセット」で全消去。</div>
+<button id="helpToggle" aria-expanded="false">操作方法を表示</button><div id="help" class="hud panel hidden"><b>操作</b><br>PC：WASD移動 / マウス視点（右クリックで視点固定）/ 中央照準に合わせて左クリックで配置<br>スマホ：左スティック移動 / 画面右側をスワイプして視点 / 中央照準に合わせて建築ボタンで配置<br>「削除」で選択中の建築を消去。「リセット」で全消去。</div>
 <div id="buildbar">
  <button class="build active" data-piece="wall"><span class="emoji">▤</span><span>壁</span></button>
  <button class="build" data-piece="floor"><span class="emoji">▦</span><span>床</span></button>
@@ -77,7 +77,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 const root=document.querySelector('#game');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x91c9e8);scene.fog=new THREE.Fog(0x91c9e8,35,100);
-const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.1,300);camera.position.set(0,3.2,8);
+const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.1,300);camera.position.set(0,4.5,7);
 const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;root.appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xdff4ff,0x4d5b69,2));
 const sun=new THREE.DirectionalLight(0xffffff,2.4);sun.position.set(-8,18,10);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
@@ -85,6 +85,17 @@ const ground=new THREE.Mesh(new THREE.PlaneGeometry(180,180),new THREE.MeshStand
 const grid=new THREE.GridHelper(100,100,0xffffff,0xffffff);grid.position.y=.01;grid.material.opacity=.18;grid.material.transparent=true;scene.add(grid);
 // A small practice arena with original, non-game-specific geometry.
 const platform=new THREE.Mesh(new THREE.BoxGeometry(24,.3,24),new THREE.MeshStandardMaterial({color:0x596b7a,roughness:.85}));platform.position.y=.12;platform.receiveShadow=true;platform.castShadow=true;scene.add(platform);
+// Third-person player model
+const player=new THREE.Group();
+const body=new THREE.Mesh(new THREE.CapsuleGeometry(.38,1.0,4,8),new THREE.MeshStandardMaterial({color:0x1b2938}));
+body.position.y=1.05;player.add(body);
+const torso=new THREE.Mesh(new THREE.BoxGeometry(.72,.62,.38),new THREE.MeshStandardMaterial({color:0x26b9e8}));
+torso.position.y=1.35;player.add(torso);
+const head=new THREE.Mesh(new THREE.SphereGeometry(.27,16,12),new THREE.MeshStandardMaterial({color:0xf0c6a5}));
+head.position.y=1.92;player.add(head);
+const legsMat=new THREE.MeshStandardMaterial({color:0x25364a});
+for(const x of [-.19,.19]){const leg=new THREE.Mesh(new THREE.BoxGeometry(.22,.55,.25),legsMat);leg.position.set(x,.35,0);player.add(leg)}
+player.position.set(0,0,8);scene.add(player);
 const colors={wall:0x55c9ee,floor:0x55d9a5,ramp:0xffc65c,roof:0xc18aff};
 const labels={wall:'壁',floor:'床',ramp:'階段',roof:'屋根'};
 let selected='wall',rotation=0,placed=[],targetPos=new THREE.Vector3(0,.3,0),yaw=0,pitch=-.12,moveX=0,moveY=0,placing=false,gameStarted=false,currentMode='build';
@@ -139,8 +150,8 @@ function joyMove(e){const r=joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r
 function joyEnd(){joyId=null;moveX=moveY=0;stick.style.transform='translate(0,0)'}joy.addEventListener('pointerup',joyEnd);joy.addEventListener('pointercancel',joyEnd);
 const keys={};document.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key===' '){e.preventDefault();placePiece()}if(e.key.toLowerCase()==='r')rotation+=Math.PI/2});
 document.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
-function animate(){requestAnimationFrame(animate);const forward=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0)-moveY;const side=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+moveX;const speed=.12;camera.position.x+=(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed;camera.position.z+=(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*speed;camera.position.x=Math.max(-23,Math.min(23,camera.position.x));camera.position.z=Math.max(-23,Math.min(23,camera.position.z));camera.position.y=3.2;
-const dir=new THREE.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch));camera.lookAt(camera.position.clone().add(dir));if(gameStarted){refreshPreview();document.querySelector('#crosshair').style.display='block';document.querySelector('#aimNote').style.display='block';}else{preview.visible=false;document.querySelector('#crosshair').style.display='none';document.querySelector('#aimNote').style.display='none';}renderer.render(scene,camera)}
+function animate(){requestAnimationFrame(animate);const forward=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0)-moveY;const side=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+moveX;const speed=.12;player.position.x+=(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed;player.position.z+=(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*speed;player.position.x=Math.max(-23,Math.min(23,player.position.x));player.position.z=Math.max(-23,Math.min(23,player.position.z));player.rotation.y=yaw;
+const forwardDir=new THREE.Vector3(Math.sin(yaw),0,-Math.cos(yaw));const cameraTarget=player.position.clone().add(new THREE.Vector3(0,1.45,0)).add(forwardDir.clone().multiplyScalar(2));const cameraDesired=player.position.clone().add(new THREE.Vector3(0,3.1,0)).sub(forwardDir.clone().multiplyScalar(5.2));camera.position.lerp(cameraDesired,.18);const dir=new THREE.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch));camera.lookAt(cameraTarget.clone().add(dir.multiplyScalar(2.4)));if(gameStarted){refreshPreview();document.querySelector('#crosshair').style.display='block';document.querySelector('#aimNote').style.display='block';}else{preview.visible=false;document.querySelector('#crosshair').style.display='none';document.querySelector('#aimNote').style.display='none';}renderer.render(scene,camera)}
 animate();
 document.querySelectorAll('.mode-card').forEach(card=>card.addEventListener('click',()=>{document.querySelectorAll('.mode-card').forEach(x=>x.classList.remove('selected'));card.classList.add('selected');currentMode=card.dataset.mode;}));
 document.querySelector('#startGame').addEventListener('click',()=>{
@@ -183,5 +194,5 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
  });
 })();
 </script>
-</body>
+<script>(()=>{const b=document.getElementById('helpToggle'),p=document.getElementById('help');if(!b||!p)return;b.addEventListener('click',()=>{const hidden=p.classList.toggle('hidden');b.textContent=hidden?'操作方法を表示':'操作方法を非表示';b.setAttribute('aria-expanded',String(!hidden));});})();</script></body>
 </html>
